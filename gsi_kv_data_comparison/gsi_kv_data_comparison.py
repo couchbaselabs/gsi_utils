@@ -8,10 +8,16 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 from couchbase.cluster import Cluster
-from couchbase.options import ClusterOptions
 from couchbase.auth import PasswordAuthenticator
+from couchbase.cluster import ClusterOptions
 from couchbase.exceptions import DocumentNotFoundException
-from couchbase.kv_range_scan import RangeScan, ScanTerm
+
+
+# from couchbase.cluster import Cluster
+# from couchbase.options import ClusterOptions
+# from couchbase.auth import PasswordAuthenticator
+# from couchbase.exceptions import DocumentNotFoundException
+# from couchbase.kv_range_scan import RangeScan, ScanTerm
 
 
 class KvIndexDataValidation:
@@ -57,7 +63,7 @@ class KvIndexDataValidation:
                                ClusterOptions(PasswordAuthenticator(username, password)))
         auth = PasswordAuthenticator(r_username, r_password)
         options = ClusterOptions(auth)
-        options.apply_profile("wan_development")
+        # options.apply_profile("wan_development")
         self.result_cluster = Cluster(f"couchbases://{result_cluster_ip}", options)
         self.bucket = self.cluster.bucket(bucket)
         self.scope = self.bucket.scope(scope)
@@ -102,35 +108,36 @@ class KvIndexDataValidation:
 
                 offset += self.batch_size
 
-    def fetch_kv_data_using_range_scan(self, doc_ids):
-        with open(self.kv_file, 'w') as f:
-            for i in range(0, len(doc_ids), self.batch_size):
-                start_doc_id = doc_ids[i]
-                end_doc_id = doc_ids[min(i + self.batch_size, len(doc_ids)) - 1]
-                self.log.info(f"KV data fetch: {start_doc_id} - {end_doc_id}")
-                start_term = ScanTerm(term=start_doc_id, exclusive=False)
-                end_term = ScanTerm(term=end_doc_id, exclusive=False)
-
-                scan = RangeScan(start=start_term, end=end_term)
-
-                batch = []  # Store the KV data in a batch
-                start_time = time.time()
-                for scan_result in self.collection.scan(scan):
-                    doc_id = scan_result.key
-                    try:
-                        doc = scan_result.content_as[dict]
-                        kv_data = {field: doc.get(field) for field in self.index_fields}
-                        kv_data["doc_id"] = doc_id
-                        batch.append(kv_data)
-                    except DocumentNotFoundException:
-                        self.log.info(f"Document {doc_id} not found in KV service.")
-                end_time = time.time()
-                time_elapsed = end_time - start_time
-                self.log.info(f"Time taken to fetch {self.batch_size} docs from KV - {time_elapsed:.6f} secs")
-                # Write the entire batch to the file in one operation
-                if batch:
-                    f.writelines(json.dumps(entry) + "\n" for entry in batch)
-                    f.flush()
+    # Todo: Enable once couchbase lib is upgraded to 4.x and above
+    # def fetch_kv_data_using_range_scan(self, doc_ids):
+    #     with open(self.kv_file, 'w') as f:
+    #         for i in range(0, len(doc_ids), self.batch_size):
+    #             start_doc_id = doc_ids[i]
+    #             end_doc_id = doc_ids[min(i + self.batch_size, len(doc_ids)) - 1]
+    #             self.log.info(f"KV data fetch: {start_doc_id} - {end_doc_id}")
+    #             start_term = ScanTerm(term=start_doc_id, exclusive=False)
+    #             end_term = ScanTerm(term=end_doc_id, exclusive=False)
+    #
+    #             scan = RangeScan(start=start_term, end=end_term)
+    #
+    #             batch = []  # Store the KV data in a batch
+    #             start_time = time.time()
+    #             for scan_result in self.collection.scan(scan):
+    #                 doc_id = scan_result.key
+    #                 try:
+    #                     doc = scan_result.content_as[dict]
+    #                     kv_data = {field: doc.get(field) for field in self.index_fields}
+    #                     kv_data["doc_id"] = doc_id
+    #                     batch.append(kv_data)
+    #                 except DocumentNotFoundException:
+    #                     self.log.info(f"Document {doc_id} not found in KV service.")
+    #             end_time = time.time()
+    #             time_elapsed = end_time - start_time
+    #             self.log.info(f"Time taken to fetch {self.batch_size} docs from KV - {time_elapsed:.6f} secs")
+    #             # Write the entire batch to the file in one operation
+    #             if batch:
+    #                 f.writelines(json.dumps(entry) + "\n" for entry in batch)
+    #                 f.flush()
 
     def fetch_kv_data_using_get(self, doc_ids):
         # Define a helper function to fetch a single document
@@ -251,10 +258,13 @@ class KvIndexDataValidation:
         self.fetch_data_from_index_in_batches()
 
         # Step 3: Fetch KV data using sorted doc IDs in batches and write to file
-        if self.use_kv_range_scan:
-            self.fetch_kv_data_using_range_scan(sorted_doc_ids)
-        else:
-            self.fetch_kv_data_using_get(sorted_doc_ids)
+        self.fetch_kv_data_using_get(sorted_doc_ids)
+
+        #Todo: KV data fetch using range scan is not supported in the current version of the Couchbase Python SDK
+        # if self.use_kv_range_scan:
+        #     self.fetch_kv_data_using_range_scan(sorted_doc_ids)
+        # else:
+        #     self.fetch_kv_data_using_get(sorted_doc_ids)
 
         # Step 4: Compare KV and Index data in batches
         self.compare_kv_index_files_in_batches()
