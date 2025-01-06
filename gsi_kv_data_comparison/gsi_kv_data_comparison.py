@@ -7,10 +7,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
-from couchbase.cluster import Cluster
-from couchbase.auth import PasswordAuthenticator
-from couchbase.cluster import ClusterOptions
-from couchbase.exceptions import DocumentNotFoundException
+from couchbase.cluster import Cluster, PasswordAuthenticator
 
 
 # from couchbase.cluster import Cluster
@@ -58,13 +55,21 @@ class KvIndexDataValidation:
 
         # Test the logger
         self.log.info(f"Logging initialized. All logs will be stored at {log_filename}")
+        auth_cluster = PasswordAuthenticator(username, password)
+        try:
+            self.cluster = Cluster(f'couchbase://{cluster_ip}?ssl=no_verify', authenticator=auth_cluster)
+        except Exception as e:
+            self.cluster = Cluster(f'couchbase://{cluster_ip}?ssl=no_verify')
+            self.cluster.authenticate(auth_cluster)
 
-        self.cluster = Cluster(f'couchbase://{cluster_ip}',
-                               ClusterOptions(PasswordAuthenticator(username, password)))
         auth = PasswordAuthenticator(r_username, r_password)
-        options = ClusterOptions(auth)
+        #options = ClusterOptions(auth)
         # options.apply_profile("wan_development")
-        self.result_cluster = Cluster(f"couchbases://{result_cluster_ip}", options)
+        try:
+            self.result_cluster = Cluster(f"couchbases://{result_cluster_ip}?ssl=no_verify", authenticator=auth)
+        except Exception as e:
+            self.result_cluster = Cluster(f"couchbases://{result_cluster_ip}?ssl=no_verify")
+            self.result_cluster.authenticate(auth)
         self.bucket = self.cluster.bucket(bucket)
         self.scope = self.bucket.scope(scope)
         self.collection = self.scope.collection(collection)
@@ -147,7 +152,7 @@ class KvIndexDataValidation:
                 kv_data = {field: doc.content_as[dict].get(field) for field in index_fields}
                 kv_data["doc_id"] = doc_id
                 return kv_data
-            except DocumentNotFoundException:
+            except Exception as e:
                 self.log.info(f"Document {doc_id} not found in KV service.")
                 return None
 
