@@ -288,7 +288,7 @@ class UpgradeWorkload:
         nodes = self.get_cluster_nodes()
         s3_link_regex = re.compile(r'(https?://[^\s]+)')
         s3_cbcollect_links = []
-        timestamp = self.timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         for node in nodes:
