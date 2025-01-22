@@ -326,6 +326,7 @@ class UpgradeWorkload:
                 # Close the SSH connection
                 ssh_client.close()
 
+        self.log.info(f"s3 links are {s3_cbcollect_links}")
         return s3_cbcollect_links
 
     def write_result_couchbase_bucket(self, result):
