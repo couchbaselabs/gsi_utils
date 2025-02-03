@@ -150,7 +150,7 @@ class UpgradeWorkload:
         with ThreadPoolExecutor() as executor_main:
             query_task = executor_main.submit(self.run_scans, self.select_queries)
             mutation_task = executor_main.submit(self.run_mutations)
-            mutation_task.result()
+
         self.log.info("Workload finished sucessfully")
 
     def per_indexer_node_stats(self):
