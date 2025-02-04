@@ -284,7 +284,7 @@ class UpgradeWorkload:
 
         return s3_pprof_links_list
 
-    def cb_collect_logs(self):
+    def cb_collect_logs(self, test_prefix="test"):
         nodes = self.get_cluster_nodes()
         s3_link_regex = re.compile(r'(https?://[^\s]+)')
         s3_cbcollect_links = []
@@ -293,7 +293,7 @@ class UpgradeWorkload:
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         for node in nodes:
             node_name = node['hostname'].split(':')[0]
-            cbcollect_file_name = f'cbcollect-{timestamp}-{node_name}'
+            cbcollect_file_name = f'cbcollect-{test_prefix}-{timestamp}-{node_name}'
             command = f'/opt/couchbase/bin/cbcollect_info --upload-host=https://cb-engineering.s3.amazonaws.com --customer=\'{cbcollect_file_name}\' {cbcollect_file_name}'
             try:
                 ssh_client.connect(node_name, 22, 'root', 'couchbase')
