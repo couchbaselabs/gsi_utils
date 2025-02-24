@@ -143,7 +143,7 @@ class UpgradeWorkload:
             _, keyspace = namespace.split(':')
             bucket, scope, collection = keyspace.split('.')
 
-            command = f"java -Xmx512m -jar magma_loader/DocLoader/target/magmadocloader/magmadocloader.jar -n {self.cluster_ip} " \
+            command = f"java -Xmx512m -cp magma_loader/DocLoader/target/magmadocloader/magmadocloader.jar Loader -n {self.cluster_ip} " \
                       f"-user '{self.username}' -pwd '{self.password}' -b {bucket} " \
                       f"-p 11207 -update_s {self.update_start} -update_e {self.update_end} " \
                       f"-create_s {self.create_start} -create_e {self.create_end} " \
