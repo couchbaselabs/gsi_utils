@@ -15,10 +15,15 @@ from couchbase.cluster import Cluster, PasswordAuthenticator
 from requests.exceptions import RequestException
 
 
-
 class UpgradeWorkload:
 
-    def __init__(self, cluster_ip, result_cluster_ip, namespaces, select_queries, update_start, update_end, s3_bucket, doc_prefix='doc_', doc_size=500, workers=1, ops_rate=5000, doc_template='Hotel', diff_percent=20, mutation_timeout=10, username='Administrator', password='password', target_version='7.6.4', result_bucket='gsi_upgrade_test_bucket', r_username='Administrator', r_password='Password@123'):
+    def __init__(self, cluster_ip, result_cluster_ip, namespaces, select_queries, s3_bucket,
+                 create_start=0, create_end=0, update_start=100, update_end=0, delete_start=0, delete_end=0,
+                 update_perc=100, create_perc=100, delete_perc=100,
+                 doc_prefix='doc_', doc_size=500, workers=1, ops_rate=5000, doc_template='Hotel',
+                 diff_percent=20, mutation_timeout=10, username='Administrator', password='password',
+                 target_version='7.6.4', result_bucket='gsi_upgrade_test_bucket',
+                 r_username='Administrator', r_password='Password@123'):
         self.log = logging.getLogger('upgrade_workload')
         self.log.setLevel(logging.INFO)
         # Set up formatter
@@ -48,8 +53,15 @@ class UpgradeWorkload:
             self.result_cluster.authenticate(auth)
         self.namespaces = namespaces
         self.select_queries = select_queries
+        self.create_perc = create_perc
+        self.update_perc = update_perc
+        self.delete_perc = delete_perc
+        self.create_start = create_start
+        self.create_end = create_end
         self.update_start = update_start
         self.update_end = update_end
+        self.delete_start = delete_start
+        self.delete_end = delete_end
         self.mutation_timeout = mutation_timeout
         self.username = username
         self.password = password
@@ -134,7 +146,9 @@ class UpgradeWorkload:
             command = f"java -Xmx512m -cp magma_loader/DocLoader/target/magmadocloader/magmadocloader.jar Loader -n {self.cluster_ip} " \
                       f"-user '{self.username}' -pwd '{self.password}' -b {bucket} " \
                       f"-p 11207 -update_s {self.update_start} -update_e {self.update_end} " \
-                      f"-cr 0 -up 100 " \
+                      f"-create_s {self.create_start} -create_e {self.create_end} " \
+                      f"-delete_s {self.delete_start} -delete_e {self.delete_end} " \
+                      f"-cr {self.create_perc} -up {self.update_perc} -dl {self.delete_perc}" \
                       f" -docSize {self.doc_size} -keyPrefix {self.doc_prefix} " \
                       f"-scope {scope} -collection {collection} " \
                       f"-workers {self.workers} -maxTTL 1800 -ops {self.ops_rate} -valueType {self.doc_template} " \
@@ -148,10 +162,10 @@ class UpgradeWorkload:
 
     def run_workload(self):
         with ThreadPoolExecutor() as executor_main:
-            query_task = executor_main.submit(self.run_scans, self.select_queries)
+            executor_main.submit(self.run_scans, self.select_queries)
             mutation_task = executor_main.submit(self.run_mutations)
-
-        self.log.info("Workload finished sucessfully")
+            mutation_task.result()
+        self.log.info("Workload finished successfully")
 
     def per_indexer_node_stats(self):
         stats_map = {}
@@ -351,10 +365,8 @@ class UpgradeWorkload:
             except Exception as e:
                 self.log.error(f"Failed to write result to Couchbase bucket '{self.result_bucket}': {e}")
 
-    def run_upload_doc_log_collection(self, stats_before, stats_after, pprof_list_before, pprof_list_after, stats_comparison_list=['memory_used', 'cpu_utilization']):
-
-        status = "FAIL"
-        diff_list = self.compare_indexer_stats(stats_map_before=stats_before, stats_map_after=stats_after, stats_comparison_list=stats_comparison_list)
+    def run_upload_doc_log_collection(self, stats_before, stats_after, pprof_list_before, pprof_list_after):
+        diff_list = self.compare_indexer_stats(stats_map_before=stats_before, stats_map_after=stats_after)
 
         if len(diff_list) >= 1:
             status = "FAIL"
@@ -378,5 +390,3 @@ class UpgradeWorkload:
             return True
         else:
             return False
-
-
