@@ -365,17 +365,17 @@ class UpgradeWorkload:
             except Exception as e:
                 self.log.error(f"Failed to write result to Couchbase bucket '{self.result_bucket}': {e}")
 
-    def run_upload_doc_log_collection(self, stats_before, stats_after, pprof_list_before, pprof_list_after):
-        diff_list = self.compare_indexer_stats(stats_map_before=stats_before, stats_map_after=stats_after)
+    def run_upload_doc_log_collection(self, stats_before, stats_after, pprof_list_before, pprof_list_after, stats_comparison_list=['memory_used', 'cpu_utilization']):
+        diff_list = self.compare_indexer_stats(stats_map_before=stats_before, stats_map_after=stats_after, stats_comparison_list=stats_comparison_list)
 
+        
         if len(diff_list) >= 1:
             status = "FAIL"
-            cbcollect_list = self.cb_collect_logs()
             self.log.info(f"diff list is {diff_list}")
         else:
             status = "PASS"
-            cbcollect_list = []
 
+        cbcollect_list = self.cb_collect_logs()
         self.result = {
             "status": status,
             "pprof_before": pprof_list_before,
