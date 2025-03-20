@@ -10,8 +10,11 @@ import json
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from couchbase.cluster import Cluster, PasswordAuthenticator
-
+try:
+    from couchbase.cluster import Cluster, PasswordAuthenticator
+except ImportError:
+    from couchbase.cluster import Cluster
+    from couchbase.auth import PasswordAuthenticator
 from requests.exceptions import RequestException
 
 
@@ -368,7 +371,7 @@ class UpgradeWorkload:
     def run_upload_doc_log_collection(self, stats_before, stats_after, pprof_list_before, pprof_list_after, stats_comparison_list=['memory_used', 'cpu_utilization']):
         diff_list = self.compare_indexer_stats(stats_map_before=stats_before, stats_map_after=stats_after, stats_comparison_list=stats_comparison_list)
 
-        
+
         if len(diff_list) >= 1:
             status = "FAIL"
             self.log.info(f"diff list is {diff_list}")
