@@ -80,7 +80,7 @@ class KvIndexDataValidation:
         self.batch_size = int(batch_size)  # Define batch size for fetching index data
         self.kv_file = kv_file
         self.index_file = index_file
-        self.index_fields = index_fields
+        self.index_fields = index_fields.split(',')
         self.result = None
         self.logfilename = log_filename
         self.result_bucket_name = result_bucket
@@ -280,13 +280,13 @@ class KvIndexDataValidation:
         # Step 5: Write result to bucket to retrieve it later and return the result to caller
         self.write_result_couchbase_bucket()
 
-        output_file = "/tmp/comparison_result.json"
-
-        # Write result to the output file
-        with open(output_file, 'w') as f:
-            json.dump(val_obj.result, f)
-
-        self.log.info(f"Saved the result in {output_file}")
+        # output_file = "/tmp/comparison_result.json"
+        #
+        # # Write result to the output file
+        # with open(output_file, 'w') as f:
+        #     json.dump(val_obj.result, f)
+        #
+        # self.log.info(f"Saved the result in {output_file}")
 
 
 if __name__ == '__main__':
