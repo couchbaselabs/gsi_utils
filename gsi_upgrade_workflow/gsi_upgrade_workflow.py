@@ -22,7 +22,7 @@ class UpgradeWorkload:
 
     def __init__(self, cluster_ip, result_cluster_ip, namespaces, select_queries, s3_bucket,
                  create_start=0, create_end=0, update_start=0, update_end=0, delete_start=0, delete_end=0,
-                 update_perc=100, create_perc=100, delete_perc=0,
+                 update_perc=100, create_perc=0, delete_perc=0,
                  doc_prefix='doc_', doc_size=500, workers=1, ops_rate=5000, doc_template='Hotel',
                  diff_percent=20, mutation_timeout=10, username='Administrator', password='password',
                  target_version='7.6.4', result_bucket='gsi_upgrade_test_bucket',
