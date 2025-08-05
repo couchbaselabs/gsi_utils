@@ -154,7 +154,7 @@ class UpgradeWorkload:
                       f"-cr {self.create_perc} -up {self.update_perc} -dl {self.delete_perc}" \
                       f" -docSize {self.doc_size} -keyPrefix {self.doc_prefix} " \
                       f"-scope {scope} -collection {collection} " \
-                      f"-workers {self.workers} -maxTTL 1800 -ops {self.ops_rate} -valueType {self.doc_template} " \
+                      f"-workers {self.workers} -ops {self.ops_rate} -valueType {self.doc_template} " \
                       f"-mutate 1  -mutation_timeout {mutation_timeout}"
 
             self.log.info("Will run this {}".format(command))
